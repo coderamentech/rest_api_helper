@@ -278,8 +278,10 @@ class LazyManager:
         if request.method == 'GET':
             return self.get_data_entries(request, collection, entry_id)
 
+        if request.method == 'DELETE':
+            return self.delete_data_entry(request, collection, entry_id)
+
         elif request.method == 'POST':
-            Util.print_frame()
             return self.add_data_entry(request, collection)
 
 
