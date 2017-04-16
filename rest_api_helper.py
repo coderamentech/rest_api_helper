@@ -47,10 +47,11 @@ class CollectionConfig:
 
         Args:
             name: collection name
-            id_field: field in a single collection entry that would be considered
-                as the ID column or ID field that would be unique for all the
-                entries of the collection
-            data_file: path to the data file that would store the collection entries
+            id_field: field in a single collection entry that would be 
+                considered as the ID column or ID field that would be unique for 
+                all the entries of the collection
+            data_file: path to the data file that would store the collection 
+                entries
 
         Returns:
             None
@@ -66,7 +67,7 @@ class LazyManager:
     Sample usage:
         <code>    
         configs = []
-        configs.append(CollectionConfig('volunteers', 'email', 'data_volunteers.json'))
+        configs.append(CollectionConfig('users', 'email', 'data_users.json'))
 
         manager = LazyManager()
         manager.init(configs)
@@ -94,8 +95,8 @@ class LazyManager:
     
     @staticmethod
     def init(collection_config_list):
-        """Initializes the manager with a list of configuration for each collection
-        that it will manage.
+        """Initializes the manager with a list of configuration for each 
+        collection that it will manage.
 
         Args:
             collection_config_list: list of collection configuration
@@ -121,7 +122,7 @@ class LazyManager:
             list of collection entries loaded
         """
 
-        if not os.path.isfile(path):            # Create file if file doesnt exist yet
+        if not os.path.isfile(path):            # Create file if file not found
 
             # Create necessary parent directories
             basedir = os.path.dirname(path)
@@ -168,9 +169,11 @@ class LazyManager:
         return resp
 
     def add_data_entry(self, request, collection):
-        """Adds a new entry in the collection associated with the specified collection.
+        """Adds a new entry in the collection associated with the specified 
+        collection.
         
-        The entry will be extracted from the HTTP request body as JSON-encoded content.
+        The entry will be extracted from the HTTP request body as JSON-encoded 
+        content.
         
         Args:
             request: Request object associated with the HTTP request
