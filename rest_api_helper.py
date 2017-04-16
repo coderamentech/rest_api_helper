@@ -181,6 +181,18 @@ class LazyManager:
         return resp
 
     def delete_data_entry(self, request, collection, entry_id):
+        """Deletes the data entry in the specified collection with
+        the corresponding entry_id
+
+        Args:
+            request: Request object associated with the HTTP request
+            collection: collection name
+            entry_id: ID to find; needle in haystack
+
+        Returns:
+            HTTP response; 200 for success; otherwise, 404 
+        """
+
         collection = self.get_records()[collection]
 
         status = 200
