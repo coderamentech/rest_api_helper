@@ -180,6 +180,42 @@ class LazyManager:
 
         return resp
 
+    def delete_data_entry(self, request, collection, entry_id):
+        """Deletes the data entry in the specified collection with
+        the corresponding entry_id
+
+        Args:
+            request: Request object associated with the HTTP request
+            collection: collection name
+            entry_id: ID to find; needle in haystack
+
+        Returns:
+            HTTP response; 200 for success; otherwise, 404 
+        """
+
+        collection = self.get_records()[collection]
+
+        status = 200
+        content = None
+
+        if entry_id == None or len(entry_id) == 0:                
+            content = json.dumps(collection)
+        else:
+            key = next((k for k,i in collection.iteritems() 
+                if i['__id__'] == entry_id), None)
+            
+            if key == None:
+                status = 404
+            else:
+                del collection[key]
+
+        #resp = content
+        resp = Response(response=content,
+                       status=status,
+                       mimetype="application/json")
+
+        return resp
+
     def add_data_entry(self, request, collection):
         """Adds a new entry in the collection associated with the specified 
         collection.
@@ -254,8 +290,10 @@ class LazyManager:
         if request.method == 'GET':
             return self.get_data_entries(request, collection, entry_id)
 
+        if request.method == 'DELETE':
+            return self.delete_data_entry(request, collection, entry_id)
+
         elif request.method == 'POST':
-            Util.print_frame()
             return self.add_data_entry(request, collection)
 
 
