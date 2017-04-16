@@ -180,6 +180,30 @@ class LazyManager:
 
         return resp
 
+    def delete_data_entry(self, request, collection, entry_id):
+        collection = self.get_records()[collection]
+
+        status = 200
+        content = None
+
+        if entry_id == None or len(entry_id) == 0:                
+            content = json.dumps(collection)
+        else:
+            key = next((k for k,i in collection.iteritems() 
+                if i['__id__'] == entry_id), None)
+            
+            if key == None:
+                status = 404
+            else:
+                del collection[key]
+
+        #resp = content
+        resp = Response(response=content,
+                       status=status,
+                       mimetype="application/json")
+
+        return resp
+
     def add_data_entry(self, request, collection):
         """Adds a new entry in the collection associated with the specified 
         collection.
