@@ -151,6 +151,7 @@ class LazyManager:
         Args:
             request: Request object associated with the HTTP request
             collection: collection name
+            entry_id: ID to find; needle in haystack
 
         Returns:
             HTTP response containing the list of entries as JSON content
