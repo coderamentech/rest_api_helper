@@ -239,6 +239,9 @@ class LazyManager:
             corresponding HTTP response
         """
 
+        if not LazyManager.collection_configs.has_key(collection):
+            return Response(status = 404)
+
         if request.method == 'GET':
             return self.get_data_entries(request, collection)
 
