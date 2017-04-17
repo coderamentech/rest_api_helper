@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 from flask import Flask, Response, request
-import json, os, pprint, uuid, inspect, threading
+import json, os, pprint, uuid, inspect, threading, atexit
 
 class Util:
     """Contains assorted utility or helper methods for this module
@@ -98,7 +98,7 @@ class DataHelper:
         the data file is not found, this method will attempt to create it.
 
         Args:
-            collection_config_list: list of collection configuration
+            path: data file path
 
         Returns:
             list of collection entries loaded
@@ -122,6 +122,34 @@ class DataHelper:
 
         pprint.pprint(entries)
         return entries
+
+    @staticmethod
+    def save_data(path, data):
+        """Saves specified collection as JSON contents in a data file.
+
+        Args:
+            path: data file path
+
+        Returns:
+            True on success; otherwise, false
+        """
+
+        if not os.path.isfile(path):            # Create file if file not found
+
+            # Create necessary parent directories
+            basedir = os.path.dirname(path)
+            if len(basedir) > 0 and not os.path.exists(basedir):
+                os.makedirs(basedir)            # Create parent directories
+
+            open(path, 'a').close()             # Create the file
+
+        with open(path, 'w') as data_file:
+            try:
+                entries = json.dump(data, data_file)
+            except ValueError:
+                return False
+
+        return True
 
 class LazyManager:
     """Serves as the manager or engine of this REST API service 
