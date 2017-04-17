@@ -200,6 +200,7 @@ class LazyManager:
             LazyManager.locks[config.name] = threading.RLock()
             LazyManager.records[config.name] = DataHelper.load_data(config.data_file)
 
+        atexit.register(LazyManager.handle_shutdown)
 
     def get_records(self):
         return LazyManager.records
@@ -387,5 +388,13 @@ class LazyManager:
 
         elif request.method == 'POST':
             return self.add_update_data_entries(request, collection)
+
+
+    @staticmethod
+    def handle_shutdown():
+
+        for name, config in LazyManager.collection_configs.iteritems():
+             DataHelper.save_data(config.data_file, LazyManager.records[config.name])
+
 
 
