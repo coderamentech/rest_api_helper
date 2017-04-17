@@ -68,7 +68,7 @@ class DataHelper:
 
         logical_id_field = LazyManager.collection_configs[collection].id_field
         if not entry.has_key(logical_id_field):
-            return 400, ''
+            return 400, str('')
 
         id_value = entry[logical_id_field]
 
