@@ -12,7 +12,7 @@ here = path.abspath(path.dirname(__file__))
 
 
 setup(
-    name='sample',
+    name='rest_api_helper',
 
     version='0.1.0',
 
@@ -50,7 +50,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='sample setuptools development',
+    keywords='development',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().

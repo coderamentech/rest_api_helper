@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 from flask import Flask, Response, request
-import json, os, pprint, uuid, inspect, threading
+import json, os, pprint, uuid, inspect, threading, atexit
 
 class Util:
     """Contains assorted utility or helper methods for this module
@@ -60,6 +60,96 @@ class CollectionConfig:
         self.name = name
         self.id_field = id_field
         self.data_file = data_file 
+
+class DataHelper:
+
+    @staticmethod
+    def add_entry(records, collection, entry):
+
+        logical_id_field = LazyManager.collection_configs[collection].id_field
+        if not entry.has_key(logical_id_field):
+            return 400, str('')
+
+        id_value = entry[logical_id_field]
+
+        if entry.has_key('__id__'):
+            pass
+        else:
+            entry['__id__'] = str(uuid.uuid4())
+
+        entries = records[collection]
+        
+        if entries.has_key(id_value):
+
+            old_entry = entries[id_value]
+
+            # Must validate against existing entry.
+            # Check if the old and new entry has the same internal ID
+            if not old_entry['__id__'] == entry['__id__']:
+                return 400, '{"error": "non matching IDs"}'
+
+        entries[id_value] = entry    
+
+        return 200, json.dumps(entry)
+
+    @staticmethod
+    def load_data(path):
+        """Loads the contents of the specified collection data file as JSON. If 
+        the data file is not found, this method will attempt to create it.
+
+        Args:
+            path: data file path
+
+        Returns:
+            list of collection entries loaded
+        """
+
+        if not os.path.isfile(path):            # Create file if file not found
+
+            # Create necessary parent directories
+            basedir = os.path.dirname(path)
+            if len(basedir) > 0 and not os.path.exists(basedir):
+                os.makedirs(basedir)            # Create parent directories
+
+            open(path, 'a').close()             # Create the file
+
+        entries = []
+        with open(path, 'r') as data_file:
+            try:
+                entries = json.load(data_file)
+            except ValueError:
+                entries = {}
+
+        pprint.pprint(entries)
+        return entries
+
+    @staticmethod
+    def save_data(path, data):
+        """Saves specified collection as JSON contents in a data file.
+
+        Args:
+            path: data file path
+
+        Returns:
+            True on success; otherwise, false
+        """
+
+        if not os.path.isfile(path):            # Create file if file not found
+
+            # Create necessary parent directories
+            basedir = os.path.dirname(path)
+            if len(basedir) > 0 and not os.path.exists(basedir):
+                os.makedirs(basedir)            # Create parent directories
+
+            open(path, 'a').close()             # Create the file
+
+        with open(path, 'w') as data_file:
+            try:
+                entries = json.dump(data, data_file)
+            except ValueError:
+                return False
+
+        return True
 
 class LazyManager:
     """Serves as the manager or engine of this REST API service 
@@ -108,38 +198,9 @@ class LazyManager:
         for config in collection_config_list:
             LazyManager.collection_configs[config.name] = config
             LazyManager.locks[config.name] = threading.RLock()
-            LazyManager.records[config.name] = LazyManager.load_data(config.data_file)
+            LazyManager.records[config.name] = DataHelper.load_data(config.data_file)
 
-    @staticmethod
-    def load_data(path):
-        """Loads the contents of the specified collection data file as JSON. If 
-        the data file is not found, this method will attempt to create it.
-
-        Args:
-            collection_config_list: list of collection configuration
-
-        Returns:
-            list of collection entries loaded
-        """
-
-        if not os.path.isfile(path):            # Create file if file not found
-
-            # Create necessary parent directories
-            basedir = os.path.dirname(path)
-            if len(basedir) > 0 and not os.path.exists(basedir):
-                os.makedirs(basedir)            # Create parent directories
-
-            open(path, 'a').close()             # Create the file
-
-        entries = []
-        with open(path, 'r') as data_file:
-            try:
-                entries = json.load(data_file)
-            except ValueError:
-                entries = []
-
-        pprint.pprint(entries)
-        return entries
+        atexit.register(LazyManager.handle_shutdown)
 
     def get_records(self):
         return LazyManager.records
@@ -235,7 +296,7 @@ class LazyManager:
 
         collection = self.get_records()[collection]
 
-        status = 404
+        status = 200
 
         if entry_id == None or len(entry_id) == 0:                
             status = 404
@@ -255,12 +316,13 @@ class LazyManager:
 
         return resp
 
-    def add_data_entry(self, request, collection):
-        """Adds a new entry in the collection associated with the specified 
-        collection.
+    def add_update_data_entries(self, request, collection):
+        """Adds or updates entries in the collection associated with the 
+        specified collection. 
         
-        The entry will be extracted from the HTTP request body as JSON-encoded 
-        content.
+        Entries will be extracted from the HTTP request body as JSON-encoded 
+        content. The body is expected to contain a single dictionary or a list of
+        dictionaries.
         
         Args:
             request: Request object associated with the HTTP request
@@ -276,38 +338,22 @@ class LazyManager:
         if entry == None:
             return Response(status = 400)
 
-        logical_id_field = LazyManager.collection_configs[collection].id_field
-        if not entry.has_key(logical_id_field):
-            resp = Response(status = 400)
-            return resp
-
-        id_value = entry[logical_id_field]
-
-        if entry.has_key('__id__'):
-            pass
+        if not isinstance(entry, list):
+            status, content = DataHelper.add_entry(records, collection, entry)
         else:
-            entry['__id__'] = str(uuid.uuid4())
+            entries = entry
+            contents = [] 
 
-        collection = records[collection]
-        
-        if collection.has_key(id_value):
+            for entry in entries:
+                status, txt = DataHelper.add_entry(records, collection, entry)
+                contents.append(txt)
 
-            old_entry = collection[id_value]
-
-            # Must validate against existing entry.
-            # Check if the old and new entry has the same internal ID
-            if not old_entry['__id__'] == entry['__id__']:
-                print "non matching ID's"
-                resp = Response(response='{"error":"non-matching ID"}',
-                                status=400,
-                                mimetype="application/json")
-                return resp
-
-        collection[id_value] = entry    
+            status = 200
+            content = '[' + ','.join(contents) + ']'
         #pprint.pprint(entry)
 
-        resp = Response(response=json.dumps(entry),
-                       status=200,
+        resp = Response(response=content,
+                       status=status,
                        mimetype="application/json")
 
         return resp
@@ -335,9 +381,20 @@ class LazyManager:
             return self.delete_data_entry(request, collection, entry_id)
 
         if request.method == 'PUT':
-            return self.update_data_entry(request, collection, entry_id)
+            if not entry_id == None:
+                return self.update_data_entry(request, collection, entry_id)
+            else:
+                return self.add_update_data_entries(request, collection)
 
         elif request.method == 'POST':
-            return self.add_data_entry(request, collection)
+            return self.add_update_data_entries(request, collection)
+
+
+    @staticmethod
+    def handle_shutdown():
+
+        for name, config in LazyManager.collection_configs.iteritems():
+             DataHelper.save_data(config.data_file, LazyManager.records[config.name])
+
 
 
