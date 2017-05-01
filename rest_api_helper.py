@@ -441,6 +441,27 @@ class LazyManager:
 
 
     @staticmethod
+    def handle_url_single_filter(req, resp, filter_list):
+        for filter_key in filter_list:
+            value = req.args.get(filter_key)    
+            if not value:
+                continue
+
+            new_entries = {}                                   # new entries  
+            for txt in resp.response:                          # for all response texts 
+                dictionary = json.loads(txt)                   # convert to dictionary of __id__->entry
+
+                for k, entry in dictionary.iteritems():        # Traverse dictionary of entries
+                    if entry[filter_key] == value:             # Filter
+                        new_entries[entry['__id__']] = entry
+
+            resp = Response(response=json.dumps(new_entries),
+                           status=200,
+                           mimetype="application/json")
+        return resp
+
+
+    @staticmethod
     def handle_shutdown():
 
         for name, config in LazyManager.collection_configs.iteritems():
