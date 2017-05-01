@@ -441,19 +441,21 @@ class LazyManager:
 
 
     @staticmethod
-    def handle_url_single_filter(req, resp, filter_list):
+    def handle_url_single_filter(collection, req, resp, filter_list):
+        config = LazyManager.collection_configs[collection]
+
+        new_entries = {}                                   # new entries  
         for filter_key in filter_list:
             value = req.args.get(filter_key)    
             if not value:
                 continue
 
-            new_entries = {}                                   # new entries  
             for txt in resp.response:                          # for all response texts 
                 dictionary = json.loads(txt)                   # convert to dictionary of __id__->entry
 
                 for k, entry in dictionary.iteritems():        # Traverse dictionary of entries
                     if entry[filter_key] == value:             # Filter
-                        new_entries[entry['__id__']] = entry
+                        new_entries[entry[config.id_field]] = entry
 
             resp = Response(response=json.dumps(new_entries),
                            status=200,
