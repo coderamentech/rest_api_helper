@@ -123,7 +123,7 @@ class DataHelper:
 
         id_value = entry[logical_id_field]
 
-        if entry.has_key('__id__'):
+        if entry.has_key('__id__') and len(entry['__id__']) > 0:
             pass
         else:
             entry['__id__'] = str(uuid.uuid4())
