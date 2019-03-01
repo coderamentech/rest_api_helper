@@ -465,9 +465,11 @@ class LazyManager:
 
     @staticmethod
     def handle_shutdown():
+        LazyManager.save()
 
+    @staticmethod
+    def save():
         for name, config in LazyManager.collection_configs.iteritems():
+             print config.data_file
              DataHelper.save_data(config.data_file, LazyManager.records[config.name])
-
-
 
