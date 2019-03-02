@@ -207,22 +207,43 @@ class LazyManager:
 
     Sample usage:
         <code>    
+        from flask import Flask, Response, request, send_from_directory
+        import json, pprint
+        import uuid
+
+        from rest_api_helper import LazyManager, CollectionConfig, DataHelper
+
+        # Initialize the simplified no-SQL/flat-file data storage
         configs = []
-        configs.append(CollectionConfig('users', 'email', 'data_users.json'))
+        configs.append(CollectionConfig('temperature', 'id', 'data_heat.json'))
 
         manager = LazyManager()
         manager.init(configs)
 
-        app = Flask(__name__)
+        app = Flask(__name__, static_url_path='/static')
 
-        @app.route("/<collection>", defaults={'entry_id': None}, methods=['POST', 'GET'])
-        @app.route("/<collection>/<entry_id>", methods=['PUT', 'GET'])
-        def handle_volunteers(collection, entry_id):
+
+        @app.route("/api/<collection>", defaults={'entry_id': None}, methods=['POST', 'GET', 'PUT'])
+        @app.route("/api/<collection>/<entry_id>", methods=['PUT', 'GET', 'DELETE'])
+        @app.route("/api/<collection>", defaults={'entry_id': None}, methods=['POST', 'PUT'])
+        @app.route("/api/<collection>/<entry_id>", methods=['PUT'])
+        def handle_api(collection, entry_id):
             global manager
-            return manager.process_request(request, collection, entry_id)
+            resp = manager.process_request(request, collection, entry_id)
+            return resp
+
+        # @app.route('/')
+        # @app.route('/<path:path>')
+        # def handle_index(path='index.html'):
+        #     print 'path: [', path, ']'
+        #     return send_from_directory('static', path)
 
         if __name__ == "__main__":
-            app.run(host='0.0.0.0')
+            try:
+                app.run(host='0.0.0.0', port=8001)
+            finally:
+                manager.handle_shutdown()
+
         </code>
     """
 
